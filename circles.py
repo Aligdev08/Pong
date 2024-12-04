@@ -19,6 +19,9 @@ class Colour:
         return Colour(shadow_red, shadow_green, shadow_blue)
 
 
+import pygame
+import math
+
 class Circle:
     def __init__(self, fill: Colour, radius: float, centre: tuple[int, int], surface: pygame.Surface, border: int = 0,
                  border_colour: Colour = None):
@@ -30,10 +33,28 @@ class Circle:
         self.border_colour = border_colour if border_colour is not None else Colour(0, 0, 0)  # default to black
 
     def draw(self):
-        pygame.draw.circle(self.surface, self.border_colour.to_tuple(), self.centre, self.radius)
-
         if self.border > 0:
+            pygame.draw.circle(self.surface, self.border_colour.to_tuple(), self.centre, self.radius)
             pygame.draw.circle(self.surface, self.fill.to_tuple(), self.centre, self.radius - self.border)
+        else:
+            pygame.draw.circle(self.surface, self.fill.to_tuple(), self.centre, self.radius)
+
+    def blur(self, blur_factor: int):
+        """Adds a blur effect around the circle with a given blur factor."""
+        blur_surface = pygame.Surface((self.radius * 2 + blur_factor * 2, self.radius * 2 + blur_factor * 2), pygame.SRCALPHA)
+        blur_surface.set_colorkey((0, 0, 0))  # Make black transparent
+
+        for i in range(blur_factor):
+            alpha = int(255 * (1 - i / blur_factor))  # Gradually decreasing opacity
+            color = (*self.fill.to_tuple()[:3], alpha)  # Adjust alpha in the color tuple
+            pygame.draw.circle(
+                blur_surface, 
+                color, 
+                (self.radius + blur_factor, self.radius + blur_factor), 
+                self.radius + i
+            )
+
+        self.surface.blit(blur_surface, (self.centre[0] - self.radius - blur_factor, self.centre[1] - self.radius - blur_factor))
 
     def point_intersect(self, position: tuple[int, int]):
         x, y = position
@@ -55,35 +76,53 @@ class Circle:
         else:
             return False
 
-    def rectangle_intersect(self, rect: pygame.Rect) -> bool:
+    def rectangle_intersect(self, rect: pygame.Rect) -> str | None:
         a, b = self.centre
+        rect_x, rect_y, rect_width, rect_height = rect
 
-        closest_x = max(rect.left, min(a, rect.right))
-        # this is the closest x value on/in the rectangle to the centre of the circle
+        # Calculate the closest point on the rectangle to the ball center
+        closest_x = max(rect_x, min(a, rect_x + rect_width))
+        closest_y = max(rect_y, min(b, rect_y + rect_height))
 
-        closest_y = max(rect.top, min(b, rect.bottom))
-        # this is the closest y value on/in the rectangle to the centre of the circle
+        dist_x = (closest_x - a) ** 2
+        dist_y = (closest_y - b) ** 2
 
-        if (closest_x - a) ** 2 + (closest_y - b) ** 2 <= self.radius ** 2:
-            return True
-        else:
-            return False
-    
+        # Check for intersection
+        if dist_x + dist_y <= self.radius ** 2:
+            overlap_x = abs(a - closest_x)
+            overlap_y = abs(b - closest_y)
+
+            # Determine which side the ball collided with based on the overlap
+            if overlap_x >= overlap_y:
+                # x-axis collision (ball's center x is closer to rect's edge)
+                if a <= closest_x:
+                    # Ball is to the left of the paddle
+                    self.centre = (closest_x + self.radius, b)  # Push the ball away
+                else:
+                    # Ball is to the right of the paddle
+                    self.centre = (closest_x - self.radius, b)  # Push the ball away
+                return "x"
+            else:
+                # y-axis collision (ball's center y is closer to rect's edge)
+                if b <= closest_y:
+                    # Ball is above the paddle
+                    self.centre = (a, closest_y + self.radius)  # Push the ball away
+                else:
+                    # Ball is below the paddle
+                    self.centre = (a, closest_y - self.radius)  # Push the ball away
+                return "y"
+        
+        return None
+
+                
+
     def expected_linear_intersect(self, gradient: float, y_intercept: float) -> bool:
         centrex, centrey = self.centre
-
         a = 1 + gradient**2
         b = 2 * gradient * (y_intercept - centrey) - 2 * centrex
         c = centrex**2 + (y_intercept - centrey)**2 - self.radius**2
-
-        discriminant = b**2 - 4 * a * c  # b² - 4ac
-        if discriminant > 0:
-            return True  # intersects at two real points
-        elif discriminant == 0:
-            return True  # intersects at one real point
-        else:
-            return False  # discriminant < 0 ∴ intersects at no real points
-    
+        discriminant = b**2 - 4 * a * c
+        return discriminant >= 0
 
     def set_fill(self, fill: Colour):
         self.fill = fill
