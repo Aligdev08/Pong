@@ -8,7 +8,6 @@ game_surface = pygame.display.set_mode([500, 500])
 
 running = True
 
-# Define constants for difficulty
 DIFFICULTY_EASY = 1
 DIFFICULTY_MEDIUM = 2
 DIFFICULTY_HARD = 3
@@ -30,27 +29,24 @@ class Paddle(pygame.Rect):
     def __init__(self, topleft: Tuple[int, int], width: int, height: int, speed: int = 5):
         x, y = topleft
         super().__init__(x, y, width, height)
-        self.instance_moving = False  # Whether the paddle is moving
+        self.instance_moving = False
         self.speed = speed
 
     def move(self, up: int, down: int):
-        force = down - up  # Calculate net force (down force minus up force)
+        force = down - up  # net force
 
-        if force == 0:  # No movement if up and down are equal
+        if force == 0:
             return
 
-        # Update the paddle's vertical position based on the force
-        if self.instance_moving:  # Only move if the paddle is supposed to move
+        if self.instance_moving:
             self.y += force * self.speed
 
-            # Ensure the paddle stays within the screen boundaries
             if self.top < 0:
                 self.top = 0
-            elif self.bottom > 500:  # Assuming the screen height is 500
+            elif self.bottom > 500:  # assuming the screen height is 500
                 self.bottom = 500
 
     def set_moving(self, moving: bool):
-        """Sets whether the paddle is moving or not."""
         self.instance_moving = moving
 
 
@@ -74,31 +70,25 @@ class Ball(Circle):
         self.last_bounced = None
 
     def bounce(self, axis: str):
-        """Handle boundary collisions and adjust trajectory based on the collision axis."""
         if axis == "x":
             self.trajectory.reflect_x()
-            # Move slightly away from the boundary to avoid getting stuck
+            # move slightly away from the boundary to avoid getting stuck
             self.centre = (
                 self.centre[0] + self.trajectory.x_velocity * self.speed,
                 self.centre[1],
             )
         elif axis == "y":
             self.trajectory.reflect_y()
-            # Move slightly away from the boundary to avoid getting stuck
+            # move slightly away from the boundary to avoid getting stuck
             self.centre = (
                 self.centre[0],
                 self.centre[1] + self.trajectory.y_velocity * self.speed,
             )
 
     def move(self):
-        """Check for boundary collisions and update the ball's position."""
         x, y = self.centre
-        epsilon = 1.0  # Tolerance for boundary detection
+        epsilon = 1.0  # tolerance for boundary detection
 
-        # Check for horizontal boundary collisions
-
-
-        # Check for vertical boundary collisions
         if y + self.radius >= self.bounds[1][1] - epsilon:
             self.bounce("y")
         elif y - self.radius <= self.bounds[0][0] + epsilon:
@@ -212,11 +202,10 @@ class Game:
         self.display_score()
 
     def spawn_new_ball(self):
-        """Spawn a new ball in the center."""
         new_ball = Ball(
             fill=Colour(155, 0, 0),
             radius=self.settings.ball_radius,
-            centre=(250, 250),  # Center of the screen
+            centre=(250, 250),
             surface=game_surface,
             trajectory=self.settings.ball_trajectory,
             bounds=self.settings.bounds,
@@ -227,21 +216,19 @@ class Game:
         self.balls.append(new_ball)
 
     def display_score(self):
-        """Display the score."""
         font = pygame.font.Font(None, 36)
         score_text = font.render(f"Score: {self.score}", True, (255, 255, 255))
         game_surface.blit(score_text, (10, 10))
 
 
 def show_start_menu():
-    """Display the start menu."""
     font = pygame.font.Font(None, 50)
     game_surface.fill((0, 0, 0))
     start_text = font.render("Press Enter to Start", True, (255, 255, 255))
     game_surface.blit(start_text, (100, 200))
 
-    difficulty_text = font.render("Press 1 for Easy, 2 for Medium, 3 for Hard", True, (255, 255, 255))
-    game_surface.blit(difficulty_text, (30, 300))
+    difficulty_text = font.render("1 - Easy, 2 - Medium, 3 - Hard", True, (255, 255, 255))
+    game_surface.blit(difficulty_text, (10, 300))
 
     pygame.display.flip()
 
