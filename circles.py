@@ -19,9 +19,6 @@ class Colour:
         return Colour(shadow_red, shadow_green, shadow_blue)
 
 
-import pygame
-import math
-
 class Circle:
     def __init__(self, fill: Colour, radius: float, centre: tuple[int, int], surface: pygame.Surface, border: int = 0,
                  border_colour: Colour = None):
@@ -38,23 +35,6 @@ class Circle:
             pygame.draw.circle(self.surface, self.fill.to_tuple(), self.centre, self.radius - self.border)
         else:
             pygame.draw.circle(self.surface, self.fill.to_tuple(), self.centre, self.radius)
-
-    def blur(self, blur_factor: int):
-        """Adds a blur effect around the circle with a given blur factor."""
-        blur_surface = pygame.Surface((self.radius * 2 + blur_factor * 2, self.radius * 2 + blur_factor * 2), pygame.SRCALPHA)
-        blur_surface.set_colorkey((0, 0, 0))  # Make black transparent
-
-        for i in range(blur_factor):
-            alpha = int(255 * (1 - i / blur_factor))  # Gradually decreasing opacity
-            color = (*self.fill.to_tuple()[:3], alpha)  # Adjust alpha in the color tuple
-            pygame.draw.circle(
-                blur_surface, 
-                color, 
-                (self.radius + blur_factor, self.radius + blur_factor), 
-                self.radius + i
-            )
-
-        self.surface.blit(blur_surface, (self.centre[0] - self.radius - blur_factor, self.centre[1] - self.radius - blur_factor))
 
     def point_intersect(self, position: tuple[int, int]):
         x, y = position
@@ -111,18 +91,8 @@ class Circle:
                     # Ball is below the paddle
                     self.centre = (a, closest_y - self.radius)  # Push the ball away
                 return "y"
-        
+
         return None
-
-                
-
-    def expected_linear_intersect(self, gradient: float, y_intercept: float) -> bool:
-        centrex, centrey = self.centre
-        a = 1 + gradient**2
-        b = 2 * gradient * (y_intercept - centrey) - 2 * centrex
-        c = centrex**2 + (y_intercept - centrey)**2 - self.radius**2
-        discriminant = b**2 - 4 * a * c
-        return discriminant >= 0
 
     def set_fill(self, fill: Colour):
         self.fill = fill
